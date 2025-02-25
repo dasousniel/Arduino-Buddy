@@ -1,0 +1,156 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_GC9A01A.h>
+#include <SPI.h>
+
+#define TFT_CS    7   // Chip Select
+#define TFT_RST   6   // Reset
+#define TFT_DC    5   // Data/Command
+#define TFT_SDA   4   // SPI MOSI
+#define TFT_SCL   3   // SPI SCK
+
+Adafruit_GC9A01A tft = Adafruit_GC9A01A(TFT_CS, TFT_DC, TFT_RST);
+
+// Farben
+#define FACE_COLOR GC9A01A_YELLOW
+#define EYE_COLOR  GC9A01A_BLACK
+#define MOUTH_COLOR GC9A01A_BLACK
+#define BLUSH_COLOR GC9A01A_RED
+#define TAIL_COLOR GC9A01A_BROWN
+
+// Zufällige Gesichtszustände
+int eyeOffsetX = 0, eyeOffsetY = 0;
+bool isBlinking = false;
+int mouthState = 0;
+bool isSleeping = false;
+int eyebrowY = 85;  // Augenbrauenhöhe
+int tailPosition = 0; // Schwanzposition (wedeln)
+
+void drawFace() {
+    tft.fillScreen(GC9A01A_BLACK);
+    
+    // Gesicht
+    tft.fillCircle(120, 120, 80, FACE_COLOR);
+
+    // Wangenrötung für Emotionen
+    if (mouthState == 2 || mouthState == 3) { // Wenn traurig oder erstaunt
+        tft.fillCircle(90, 130, 10, BLUSH_COLOR); // Linke Wange
+        tft.fillCircle(150, 130, 10, BLUSH_COLOR); // Rechte Wange
+    }
+
+    // Abgerundete Augenbrauen
+    tft.fillRoundRect(75, eyebrowY, 40, 5, 5, EYE_COLOR);  // Linke Augenbraue
+    tft.fillRoundRect(145, eyebrowY, 40, 5, 5, EYE_COLOR); // Rechte Augenbraue
+
+    // Augen (Blinzeln = schmale Linien)
+    if (isBlinking) {
+        tft.fillRect(90 + eyeOffsetX - 10, 100 + eyeOffsetY, 20, 5, EYE_COLOR);
+        tft.fillRect(150 + eyeOffsetX - 10, 100 + eyeOffsetY, 20, 5, EYE_COLOR);
+    } else {
+        tft.fillCircle(90 + eyeOffsetX, 100 + eyeOffsetY, 10, EYE_COLOR);
+        tft.fillCircle(150 + eyeOffsetX, 100 + eyeOffsetY, 10, EYE_COLOR);
+    }
+
+    // Abgerundeter Mund (je nach Emotion)
+    if (mouthState == 0) {  // Lächeln
+        tft.fillArc(120, 150, 20, 10, 0, 180, MOUTH_COLOR);
+    } else if (mouthState == 1) {  // Neutral
+        tft.fillRoundRect(105, 140, 30, 5, 5, MOUTH_COLOR);
+    } else if (mouthState == 2) {  // Traurig
+        tft.fillArc(120, 160, 20, 10, 180, 360, MOUTH_COLOR);
+    } else if (mouthState == 3) {  // Erstaunt
+        tft.fillCircle(120, 150, 10, MOUTH_COLOR);
+    }
+
+    // Schwanz (Wackeln)
+    if (tailPosition != 0) {
+        int tailX = 120 + tailPosition;
+        int tailY = 190;
+        tft.fillRect(tailX, tailY, 20, 10, TAIL_COLOR); // Schwanz wedeln
+    }
+}
+
+// Funktion für "Schwanz wedeln"
+void wagTail() {
+    for (int i = -10; i <= 10; i++) {
+        tailPosition = i; // Schwanzposition verändern
+        drawFace();
+        delay(100);
+    }
+}
+
+// Funktion für "Schüchternes Verhalten"
+void shyBehavior() {
+    mouthState = 2;  // Traurig
+    eyebrowY = 100;  // Augenbrauen nach unten
+    eyeOffsetX = -5; // Augen nach links
+    eyeOffsetY = -5; // Augen nach oben
+    drawFace();
+    delay(1000);
+    
+    eyeOffsetX = 5;  // Augen zurück bewegen
+    eyeOffsetY = 5;  // Augen zurück bewegen
+    mouthState = 0;  // Lächeln
+    eyebrowY = 85;   // Augenbrauen zurück bewegen
+    drawFace();
+}
+
+// Funktion für Kuschelmodus
+void cuddleMode() {
+    mouthState = 0;  // Lächeln
+    isBlinking = true; // Augen schließen
+    drawFace();
+    delay(1000);
+    isBlinking = false; // Augen wieder öffnen
+    drawFace();
+}
+
+// Funktion für "aufgeregte" Reaktion (Springen)
+void excitedReaction() {
+    mouthState = 3;  // Erstaunt
+    for (int i = 0; i < 10; i++) {
+        eyeOffsetY = random(-5, 6);
+        drawFace();
+        delay(50);
+    }
+}
+
+// Funktion für Schlafmodus
+void sleepMode() {
+    isSleeping = true;
+    eyeOffsetX = 0;
+    eyeOffsetY = 0;
+    isBlinking = true;
+    drawFace();
+    delay(2000);
+    isBlinking = false;
+    drawFace();
+    delay(3000);
+    isSleeping = false;
+}
+
+// Zufällige Aktionen
+void randomAction() {
+    int action = random(0, 6);
+    if (action == 0) {
+        wagTail(); // Schwanz wedeln
+    } else if (action == 1) {
+        shyBehavior(); // Schüchtern
+    } else if (action == 2) {
+        cuddleMode(); // Kuscheln
+    } else if (action == 3) {
+        excitedReaction(); // Aufgeregt reagieren
+    } else if (action == 4) {
+        sleepMode(); // Schlafen
+    }
+}
+
+void setup() {
+    tft.begin();
+    tft.setRotation(3);  // Display Rotation
+    drawFace();          // Initiale Anzeige des Gesichts
+}
+
+void loop() {
+    randomAction(); // Zufällige Reaktion
+    delay(random(3000, 5000)); // Pause zwischen den Aktionen
+}
