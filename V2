@@ -1,0 +1,124 @@
+#include <Adafruit_GFX.h>
+#include <Adafruit_GC9A01A.h>
+#include <SPI.h>
+
+#define TFT_CS    7   // Chip Select
+#define TFT_RST   6   // Reset
+#define TFT_DC    5   // Data/Command
+#define TFT_SDA   4   // SPI MOSI
+#define TFT_SCL   3   // SPI SCK
+
+Adafruit_GC9A01A tft = Adafruit_GC9A01A(TFT_CS, TFT_DC, TFT_RST);
+
+// Farben
+#define FACE_COLOR GC9A01A_YELLOW
+#define EYE_COLOR  GC9A01A_BLACK
+#define MOUTH_COLOR GC9A01A_BLACK
+#define BLUSH_COLOR GC9A01A_RED
+
+// Zufällige Gesichtszustände
+int eyeOffsetX = 0, eyeOffsetY = 0;
+bool isBlinking = false;
+int mouthState = 0;
+int eyebrowY = 85;  // Augenbrauenhöhe
+
+// Standard- oder Ruhezustand (Resting)
+void drawRestingFace() {
+    tft.fillScreen(GC9A01A_BLACK);
+    
+    // Gesicht
+    tft.fillCircle(120, 120, 80, FACE_COLOR);
+
+    // Ruhige Augen
+    tft.fillCircle(90 + eyeOffsetX, 100 + eyeOffsetY, 15, EYE_COLOR); // Linkes Auge
+    tft.fillCircle(150 + eyeOffsetX, 100 + eyeOffsetY, 15, EYE_COLOR); // Rechtes Auge
+
+    // Neutrales Lächeln (Resting)
+    tft.fillRoundRect(105, 140, 30, 5, 5, MOUTH_COLOR);
+
+    // Ruhige Augenbrauen
+    tft.fillRoundRect(75, eyebrowY, 40, 5, 5, EYE_COLOR);  // Linke Augenbraue
+    tft.fillRoundRect(145, eyebrowY, 40, 5, 5, EYE_COLOR); // Rechte Augenbraue
+}
+
+// Funktion für "schüchterne" Reaktion
+void shyBehavior() {
+    mouthState = 2;  // Schüchtern
+    eyebrowY = 90;   // Augenbrauen senken
+    eyeOffsetX = random(-5, 5); // Augen hin und her
+    eyeOffsetY = random(-3, 3);
+    drawFace();
+    delay(1000);
+    mouthState = 0; // Zurück zum Resting
+    eyebrowY = 85;  // Augenbrauen zurück
+    drawRestingFace();
+}
+
+// Funktion für "aufgeregte" Reaktion
+void excitedReaction() {
+    mouthState = 3;  // Erstaunt
+    eyeOffsetY = random(-5, 5);
+    drawFace();
+    delay(500);
+    eyeOffsetY = 0;
+    drawRestingFace();
+}
+
+// Funktion für "Traurig"
+void sadReaction() {
+    mouthState = 4;  // Traurig
+    eyeOffsetY = random(-5, 5);
+    drawFace();
+    delay(1000);
+    mouthState = 0; // Zurück zum Resting
+    drawRestingFace();
+}
+
+// Funktion für "Neugierig"
+void curiousReaction() {
+    mouthState = 5;  // Neugierig
+    eyeOffsetX = random(-5, 5);
+    eyeOffsetY = random(-5, 5);
+    drawFace();
+    delay(1000);
+    mouthState = 0; // Zurück zum Resting
+    eyeOffsetX = 0;
+    eyeOffsetY = 0;
+    drawRestingFace();
+}
+
+// Funktion für "Schläfrig"
+void sleepyReaction() {
+    isBlinking = true;
+    drawFace();
+    delay(2000);
+    isBlinking = false;
+    drawRestingFace();
+}
+
+// Zufällige Aktionen
+void randomAction() {
+    int action = random(0, 7);  // Reduzierte Auswahl auf 7 Aktionen
+    if (action == 0) {
+        shyBehavior(); // Schüchtern
+    } else if (action == 1) {
+        excitedReaction(); // Aufgeregt
+    } else if (action == 2) {
+        sadReaction(); // Traurig
+    } else if (action == 3) {
+        curiousReaction(); // Neugierig
+    } else if (action == 4) {
+        sleepyReaction(); // Schlafen
+    }
+}
+
+void setup() {
+    tft.begin();
+    tft.setRotation(3);  // Display Rotation
+    drawRestingFace();    // Initiale Anzeige des Ruhegesichts
+}
+
+void loop() {
+    randomAction(); // Zufällige Reaktion
+    delay(random(3000, 5000)); // Pause zwischen den Aktionen
+}
