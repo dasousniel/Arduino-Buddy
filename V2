@@ -10,7 +10,7 @@
 
 Adafruit_GC9A01A tft = Adafruit_GC9A01A(TFT_CS, TFT_DC, TFT_RST);
 
-// Farben
+// Farben neu
 #define FACE_COLOR GC9A01A_BLACK   // Gesicht schwarz
 #define EYE_COLOR  GC9A01A_WHITE   // Augen weiß
 #define MOUTH_COLOR GC9A01A_WHITE  // Mund weiß
